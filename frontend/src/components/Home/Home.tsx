@@ -1,5 +1,6 @@
-
+import { useNavigate } from "react-router-dom";
 const Home = () => {
+  const navigate = useNavigate();
   return (
     <main
       style={{
@@ -68,6 +69,7 @@ const Home = () => {
             }}
           >
             <button
+              onClick={() => navigate("/email-scanner")}
               style={{
                 background: "#00ff66",
                 color: "#000",
@@ -82,6 +84,7 @@ const Home = () => {
             </button>
 
             <button
+              onClick={() => navigate("/url-scanner")}
               style={{
                 background: "transparent",
                 color: "white",
