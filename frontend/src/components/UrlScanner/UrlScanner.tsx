@@ -1,4 +1,29 @@
+import { useState } from "react";
+import axios from "axios";
+
 export default function UrlScanner() {
+  const [url, setUrl] = useState("");
+  const [result, setResult] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+
+  const handleScan = async () => {
+    try {
+      setLoading(true);
+
+      const response = await axios.post(
+        "http://localhost:8000/url/scan",
+        {
+          url: url,
+        }
+      );
+
+      setResult(response.data);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
   return (
     <main
       style={{
@@ -71,6 +96,8 @@ export default function UrlScanner() {
 
             <input
               type="text"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
               placeholder="https://example.com"
               style={{
                 width: "100%",
@@ -84,6 +111,8 @@ export default function UrlScanner() {
             />
 
             <button
+              onClick={handleScan}
+              disabled={loading}
               style={{
                 marginTop: "1.5rem",
                 padding: "14px 24px",
@@ -95,7 +124,7 @@ export default function UrlScanner() {
                 cursor: "pointer",
               }}
             >
-              Scan URL
+              {loading ? "Scanning..." : "Scan URL"}
             </button>
           </div>
 
@@ -119,11 +148,18 @@ export default function UrlScanner() {
 
               <h3
                 style={{
-                  color: "#ff4d4d",
+                  color:
+                    result?.is_malicious
+                      ? "#ff4d4d"
+                      : "#00ff66",
                   fontSize: "2rem",
                 }}
               >
-                HIGH
+                {result
+                  ? result.is_malicious
+                    ? "HIGH"
+                    : "LOW"
+                  : "--"}
               </h3>
             </div>
 
@@ -132,7 +168,7 @@ export default function UrlScanner() {
                 Confidence
               </p>
 
-              <h3>96%</h3>
+              <h3>{result ? `${result.confidence}%` : "--"}</h3>
             </div>
 
             <div style={{ marginBottom: "1.5rem" }}>
@@ -140,7 +176,7 @@ export default function UrlScanner() {
                 Domain
               </p>
 
-              <h3>paypal-secure-login.xyz</h3>
+              <h3>{url || "--"}</h3>
             </div>
 
             <div>

@@ -1,4 +1,30 @@
+import { useState } from "react";
+import axios from "axios";
 export default function EmailScanner() {
+
+  const [email, setEmail] = useState("");
+  const [result, setResult] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+
+  const handleScan = async () => {
+    try {
+      setLoading(true);
+
+      const response = await axios.post(
+        "http://127.0.0.1:8000/email/scan",
+        {
+          text: email,
+        }
+      );
+
+      setResult(response.data);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <main
       style={{
@@ -70,6 +96,8 @@ export default function EmailScanner() {
             </h2>
 
             <textarea
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               placeholder="Paste suspicious email here..."
               style={{
                 width: "100%",
@@ -85,6 +113,8 @@ export default function EmailScanner() {
             />
 
             <button
+              onClick={handleScan}
+              disabled={loading}
               style={{
                 marginTop: "1.5rem",
                 padding: "14px 24px",
@@ -96,7 +126,7 @@ export default function EmailScanner() {
                 cursor: "pointer",
               }}
             >
-              Analyze Email
+              {loading ? "Scanning..." : "Analyze Email"}
             </button>
           </div>
 
@@ -120,11 +150,18 @@ export default function EmailScanner() {
 
               <h3
                 style={{
-                  color: "#ff4d4d",
+                  color:
+                    result?.is_spam
+                      ? "#ff4d4d"
+                      : "#00ff66",
                   fontSize: "2rem",
                 }}
               >
-                HIGH
+                {result
+                  ? result.is_spam
+                    ? "HIGH"
+                    : "LOW"
+                  : "--"}
               </h3>
             </div>
 
@@ -133,7 +170,7 @@ export default function EmailScanner() {
                 Confidence
               </p>
 
-              <h3>94%</h3>
+              <h3>{result ? `${result.confidence}%` : "--"}</h3>
             </div>
 
             <div>
