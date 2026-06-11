@@ -149,17 +149,16 @@ export default function UrlScanner() {
               <h3
                 style={{
                   color:
-                    result?.is_malicious
-                      ? "#ff4d4d"
-                      : "#00ff66",
-                  fontSize: "2rem",
+                    result?.risk_level === "CRITICAL"
+                      ? "#ff0000"
+                      : result?.risk_level === "HIGH"
+                        ? "#ff4d4d"
+                        : result?.risk_level === "MEDIUM"
+                          ? "#ffaa00"
+                          : "#00ff66"
                 }}
               >
-                {result
-                  ? result.is_malicious
-                    ? "HIGH"
-                    : "LOW"
-                  : "--"}
+                {result ? result.risk_level : "--"}
               </h3>
             </div>
 
@@ -196,10 +195,15 @@ export default function UrlScanner() {
                   gap: "0.8rem",
                 }}
               >
-                <li>Suspicious domain keywords</li>
-                <li>High-risk TLD (.xyz)</li>
-                <li>Possible brand impersonation</li>
-                <li>Phishing pattern detected</li>
+                {result?.reasons?.length ? (
+                  result.reasons.map(
+                    (reason: string, index: number) => (
+                      <li key={index}>{reason}</li>
+                    )
+                  )
+                ) : (
+                  <li>No indicators detected</li>
+                )}
               </ul>
             </div>
           </div>

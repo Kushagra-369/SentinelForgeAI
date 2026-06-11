@@ -151,17 +151,16 @@ export default function EmailScanner() {
               <h3
                 style={{
                   color:
-                    result?.is_spam
-                      ? "#ff4d4d"
-                      : "#00ff66",
-                  fontSize: "2rem",
+                    result?.risk_level === "CRITICAL"
+                      ? "#ff0000"
+                      : result?.risk_level === "HIGH"
+                        ? "#ff4d4d"
+                        : result?.risk_level === "MEDIUM"
+                          ? "#ffaa00"
+                          : "#00ff66",
                 }}
               >
-                {result
-                  ? result.is_spam
-                    ? "HIGH"
-                    : "LOW"
-                  : "--"}
+                {result ? result.risk_level : "--"}
               </h3>
             </div>
 
@@ -171,6 +170,20 @@ export default function EmailScanner() {
               </p>
 
               <h3>{result ? `${result.confidence}%` : "--"}</h3>
+            </div>
+
+            <div style={{ marginBottom: "1.5rem" }}>
+              <p style={{ color: "#9ca3af" }}>
+                Classification
+              </p>
+
+              <h3>
+                {result
+                  ? result.is_spam
+                    ? "SPAM"
+                    : "SAFE"
+                  : "--"}
+              </h3>
             </div>
 
             <div>
@@ -190,10 +203,15 @@ export default function EmailScanner() {
                   gap: "0.8rem",
                 }}
               >
-                <li>Urgent action requested</li>
-                <li>Suspicious sender pattern</li>
-                <li>Potential phishing language</li>
-                <li>High-risk external link</li>
+                {result?.reasons?.length ? (
+                  result.reasons.map(
+                    (reason: string, index: number) => (
+                      <li key={index}>{reason}</li>
+                    )
+                  )
+                ) : (
+                  <li>No indicators detected</li>
+                )}
               </ul>
             </div>
           </div>
