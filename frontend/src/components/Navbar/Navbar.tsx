@@ -40,6 +40,7 @@ const Navbar = () => {
     { path: "/", label: "Home" },
     { path: "/email-scanner", label: "Email Scanner", hasBadge: true },
     { path: "/url-scanner", label: "URL Scanner" },
+    { path: "/file-scanner", label: "File Scanner" },
     { path: "/dashboard", label: "Dashboard" },
     { path: "/about", label: "About" },
   ];

@@ -8,14 +8,14 @@ import About from "./components/About/About";
 import EmailScanner from "./components/EmailScanner/EmailScanner";
 import UrlScanner from "./components/UrlScanner/UrlScanner";
 import Dashboard from "./components/Dashboard/Dashboard";
-
+import FileScanner from "./components/fileScanner/FileScanner";
 function App() {
   return (
     <BrowserRouter>
       <Navbar />
 
       <Routes>
-        <Route  path="/" element={<Home  />} />
+        <Route path="/" element={<Home />} />
 
         <Route
           path="/email-scanner"
@@ -26,7 +26,10 @@ function App() {
           path="/url-scanner"
           element={<UrlScanner />}
         />
-
+        <Route
+          path="/file-scanner"
+          element={<FileScanner />}
+        />
         <Route
           path="/dashboard"
           element={<Dashboard />}
