@@ -35,12 +35,16 @@ def get_stats(days: Optional[int] = Query(7, ge=1, le=30, description="Number of
         "type": "url"
     })
     
+    # ========== FIX: ADD FILE SCANS COUNT ==========
+    file_scans = scans_collection.count_documents({
+        **base_query,
+        "type": "file"
+    })
+    
+    # Threats detected (using risk_level instead of is_spam/is_malicious)
     threats_detected = scans_collection.count_documents({
         **base_query,
-        "$or": [
-            {"is_spam": True},
-            {"is_malicious": True}
-        ]
+        "risk_level": {"$in": ["CRITICAL", "HIGH"]}
     })
     
     detection_rate = (
@@ -49,29 +53,34 @@ def get_stats(days: Optional[int] = Query(7, ge=1, le=30, description="Number of
         else 0
     )
     
-    # Get recent scans (still from all time but limited)
+    # Get recent scans (with file support)
     recent_scans = list(
         scans_collection.find(
-            {},
+            base_query,  # FIX: Apply time filter to recent scans too
             {
                 "_id": 0,
                 "created_at": 1,
                 "type": 1,
                 "input": 1,
+                "filename": 1,  # FIX: Add filename for file scans
                 "risk_level": 1,
-                "confidence": 1
+                "confidence": 1,
+                "reasons": 1
             }
         )
         .sort("created_at", -1)
         .limit(10)
     )
     
-    # Convert ObjectId and datetime for JSON serialization
+    # Convert datetime and handle file scans
     for scan in recent_scans:
         if "created_at" in scan:
             scan["created_at"] = scan["created_at"].isoformat()
+        # For file scans, set input as filename for display
+        if scan.get("type") == "file" and scan.get("filename"):
+            scan["input"] = scan["filename"]
     
-    # ========== NEW: Daily Scan Trend for Graph ==========
+    # Daily Scan Trend
     daily_scans = scans_collection.aggregate([
         {"$match": base_query},
         {"$group": {
@@ -82,7 +91,7 @@ def get_stats(days: Optional[int] = Query(7, ge=1, le=30, description="Number of
             "threats": {
                 "$sum": {
                     "$cond": [
-                        {"$or": [{"$eq": ["$is_spam", True]}, {"$eq": ["$is_malicious", True]}]},
+                        {"$in": ["$risk_level", ["CRITICAL", "HIGH"]]},
                         1,
                         0
                     ]
@@ -97,7 +106,7 @@ def get_stats(days: Optional[int] = Query(7, ge=1, le=30, description="Number of
         for item in daily_scans
     ]
     
-    # ========== NEW: Risk Distribution for Pie Chart ==========
+    # Risk Distribution
     risk_distribution = scans_collection.aggregate([
         {"$match": base_query},
         {"$group": {
@@ -106,33 +115,19 @@ def get_stats(days: Optional[int] = Query(7, ge=1, le=30, description="Number of
         }}
     ])
     
-    risk_map = {
-        "CRITICAL": {"level": "CRITICAL", "count": 0, "color": "#ff0000"},
-        "HIGH": {"level": "HIGH", "count": 0, "color": "#ff4d4d"},
-        "MEDIUM": {"level": "MEDIUM", "count": 0, "color": "#ffaa00"},
-        "LOW": {"level": "LOW", "count": 0, "color": "#00ff66"},
-        None: {"level": "UNKNOWN", "count": 0, "color": "#9ca3af"}
-    }
-    
-    for item in risk_distribution:
-        level = item["_id"] if item["_id"] else None
-        if level in risk_map:
-            risk_map[level]["count"] = item["count"]
-        else:
-            risk_map[None]["count"] += item["count"]
-    
-    risk_distribution_list = [v for v in risk_map.values() if v["count"] > 0]
-    
-    # ========== NEW: Type Distribution for Bar Chart ==========
-    email_count = scans_collection.count_documents({**base_query, "type": "email"})
-    url_count = scans_collection.count_documents({**base_query, "type": "url"})
-    
-    type_distribution = [
-        {"type": "email", "count": email_count},
-        {"type": "url", "count": url_count}
+    risk_distribution_list = [
+        {"level": item["_id"] or "UNKNOWN", "count": item["count"]}
+        for item in risk_distribution
     ]
     
-    # ========== NEW: Average Confidence by Risk Level ==========
+    # ========== FIX: Type Distribution with FILE SUPPORT ==========
+    type_distribution = [
+        {"type": "email", "count": email_scans, "color": "#00ff66"},
+        {"type": "url", "count": url_scans, "color": "#ffaa00"},
+        {"type": "file", "count": file_scans, "color": "#4a90e2"}  # FILE ADDED
+    ]
+    
+    # Average Confidence by Risk Level
     confidence_by_risk = scans_collection.aggregate([
         {"$match": base_query},
         {"$group": {
@@ -147,19 +142,19 @@ def get_stats(days: Optional[int] = Query(7, ge=1, le=30, description="Number of
             "avg_confidence": round(item["avg_confidence"], 2)
         }
         for item in confidence_by_risk
-        if item["_id"] is not None  # Skip None values
+        if item["_id"] is not None
     ]
     
     return {
         "total_scans": total_scans,
         "email_scans": email_scans,
         "url_scans": url_scans,
+        "file_scans": file_scans,  # FIX: Add file_scans to response
         "threats_detected": threats_detected,
         "detection_rate": detection_rate,
         "recent_scans": recent_scans,
-        # New fields for graphs
         "daily_scan_trend": daily_scan_trend,
         "risk_distribution": risk_distribution_list,
-        "type_distribution": type_distribution,
+        "type_distribution": type_distribution,  # FIX: Now includes files
         "avg_confidence_by_risk": avg_confidence_by_risk
     }

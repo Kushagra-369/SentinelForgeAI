@@ -18,12 +18,11 @@ import {
 
 // ========== Type Definitions ==========
 interface Scan {
-  type: "email" | "url";
-  input: string;
-  risk_level: "CRITICAL" | "HIGH" | "MEDIUM" | "LOW";
+  type: "email" | "url" | "file";
+  input?: string;
+  filename?: string;
+  risk_level: string;
   confidence?: number;
-  is_spam?: boolean;
-  is_malicious?: boolean;
   created_at?: string;
   reasons?: string[];
 }
@@ -32,6 +31,7 @@ interface DashboardStats {
   total_scans: number;
   email_scans: number;
   url_scans: number;
+  file_scans: number;  // New field
   threats_detected: number;
   detection_rate: number;
   recent_scans: Scan[];
@@ -43,7 +43,6 @@ interface DashboardStats {
   risk_distribution: Array<{
     level: string;
     count: number;
-    color: string;
   }>;
   type_distribution: Array<{
     type: string;
@@ -55,12 +54,20 @@ interface DashboardStats {
   }>;
 }
 
-// Colors for different risk levels
-const RISK_COLORS = {
+// Colors
+const RISK_COLORS: Record<string, string> = {
   CRITICAL: "#ff0000",
   HIGH: "#ff4d4d",
   MEDIUM: "#ffaa00",
   LOW: "#00ff66",
+  SAFE: "#00cc44",
+  UNKNOWN: "#9ca3af",
+};
+
+const TYPE_COLORS: Record<string, string> = {
+  email: "#00ff66",
+  url: "#ffaa00",
+  file: "#4a90e2",
 };
 
 export default function Dashboard() {
@@ -89,7 +96,18 @@ export default function Dashboard() {
   }, [timeRange]);
 
   const getRiskColor = (riskLevel: string): string => {
-    return RISK_COLORS[riskLevel as keyof typeof RISK_COLORS] || "#9ca3af";
+    return RISK_COLORS[riskLevel] || RISK_COLORS.UNKNOWN;
+  };
+
+  const getTypeColor = (type: string): string => {
+    return TYPE_COLORS[type] || "#9ca3af";
+  };
+
+  const getDisplayText = (scan: Scan): string => {
+    if (scan.type === "file") {
+      return scan.filename || "Unknown file";
+    }
+    return scan.input || "N/A";
   };
 
   if (loading) {
@@ -182,7 +200,7 @@ export default function Dashboard() {
         background: "linear-gradient(135deg, #0a0a0a 0%, #0f0f0f 100%)",
       }}
     >
-      {/* Header with Time Range Selector */}
+      {/* Header */}
       <div
         style={{
           marginBottom: "3rem",
@@ -216,8 +234,7 @@ export default function Dashboard() {
             Threat Dashboard
           </h1>
           <p style={{ color: "#9ca3af", maxWidth: "700px" }}>
-            Real-time security intelligence & threat detection powered by
-            advanced AI
+            Real-time security intelligence & threat detection powered by advanced AI
           </p>
         </div>
 
@@ -252,46 +269,22 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Stats Cards */}
+      {/* Stats Cards - Updated with File Scans */}
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+          gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
           gap: "1.5rem",
           marginBottom: "3rem",
         }}
       >
         {[
-          {
-            title: "Total Scans",
-            value: stats.total_scans,
-            color: "#00ff66",
-            icon: "🔍",
-          },
-          {
-            title: "Emails Scanned",
-            value: stats.email_scans,
-            color: "#00ff66",
-            icon: "📧",
-          },
-          {
-            title: "URLs Scanned",
-            value: stats.url_scans,
-            color: "#00ff66",
-            icon: "🔗",
-          },
-          {
-            title: "Threats Detected",
-            value: stats.threats_detected,
-            color: "#ff4d4d",
-            icon: "⚠️",
-          },
-          {
-            title: "Detection Rate",
-            value: `${stats.detection_rate}%`,
-            color: "#ffaa00",
-            icon: "🎯",
-          },
+          { title: "Total Scans", value: stats.total_scans, color: "#00ff66", icon: "🔍" },
+          { title: "Emails", value: stats.email_scans, color: "#00ff66", icon: "📧" },
+          { title: "URLs", value: stats.url_scans, color: "#ffaa00", icon: "🔗" },
+          { title: "Files", value: stats.file_scans, color: "#4a90e2", icon: "📄" },
+          { title: "Threats", value: stats.threats_detected, color: "#ff4d4d", icon: "⚠️" },
+          { title: "Detection Rate", value: `${stats.detection_rate}%`, color: "#ffaa00", icon: "🎯" },
         ].map((item) => (
           <div
             key={item.title}
@@ -303,23 +296,11 @@ export default function Dashboard() {
               transition: "transform 0.2s",
             }}
           >
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-              }}
-            >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <p style={{ color: "#9ca3af" }}>{item.title}</p>
               <span style={{ fontSize: "1.5rem" }}>{item.icon}</span>
             </div>
-            <h2
-              style={{
-                color: item.color,
-                marginTop: "1rem",
-                fontSize: "2rem",
-              }}
-            >
+            <h2 style={{ color: item.color, marginTop: "1rem", fontSize: "1.8rem" }}>
               {item.value}
             </h2>
           </div>
@@ -330,64 +311,30 @@ export default function Dashboard() {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(500px, 1fr))",
+          gridTemplateColumns: "repeat(auto-fit, minmax(450px, 1fr))",
           gap: "2rem",
           marginBottom: "3rem",
         }}
       >
-        {/* LINE CHART - Daily Scan Trend */}
-        <div
-          style={{
-            border: "1px solid #222",
-            borderRadius: "20px",
-            padding: "1.5rem",
-            background: "#0b0b0b",
-          }}
-        >
-          <h3 style={{ marginBottom: "1rem", color: "#00ff66" }}>
-            📈 Daily Scan Activity
-          </h3>
+        {/* Line Chart */}
+        <div style={{ border: "1px solid #222", borderRadius: "20px", padding: "1.5rem", background: "#0b0b0b" }}>
+          <h3 style={{ marginBottom: "1rem", color: "#00ff66" }}>📈 Daily Scan Activity</h3>
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={stats.daily_scan_trend || []}>
               <CartesianGrid strokeDasharray="3 3" stroke="#333" />
               <XAxis dataKey="date" stroke="#9ca3af" />
               <YAxis stroke="#9ca3af" />
-              <Tooltip
-                contentStyle={{ background: "#1a1a1a", border: "1px solid #333" }}
-              />
+              <Tooltip contentStyle={{ background: "#1a1a1a", border: "1px solid #333" }} />
               <Legend />
-              <Line
-                type="monotone"
-                dataKey="count"
-                stroke="#00ff66"
-                strokeWidth={2}
-                name="Total Scans"
-                dot={{ fill: "#00ff66" }}
-              />
-              <Line
-                type="monotone"
-                dataKey="threats"
-                stroke="#ff4d4d"
-                strokeWidth={2}
-                name="Threats"
-                dot={{ fill: "#ff4d4d" }}
-              />
+              <Line type="monotone" dataKey="count" stroke="#00ff66" strokeWidth={2} name="Total Scans" />
+              <Line type="monotone" dataKey="threats" stroke="#ff4d4d" strokeWidth={2} name="Threats" />
             </LineChart>
           </ResponsiveContainer>
         </div>
 
-        {/* PIE CHART - Risk Distribution */}
-        <div
-          style={{
-            border: "1px solid #222",
-            borderRadius: "20px",
-            padding: "1.5rem",
-            background: "#0b0b0b",
-          }}
-        >
-          <h3 style={{ marginBottom: "1rem", color: "#00ff66" }}>
-            🥧 Threat Risk Distribution
-          </h3>
+        {/* Pie Chart - Risk Distribution */}
+        <div style={{ border: "1px solid #222", borderRadius: "20px", padding: "1.5rem", background: "#0b0b0b" }}>
+          <h3 style={{ marginBottom: "1rem", color: "#00ff66" }}>🥧 Threat Risk Distribution</h3>
           <ResponsiveContainer width="100%" height={300}>
             <PieChart>
               <Pie
@@ -403,85 +350,48 @@ export default function Dashboard() {
                 nameKey="level"
               >
                 {(stats.risk_distribution || []).map((entry, index) => (
-                  <Cell
-                    key={`cell-${index}`}
-                    fill={getRiskColor(entry.level)}
-                  />
+                  <Cell key={`cell-${index}`} fill={getRiskColor(entry.level)} />
                 ))}
               </Pie>
-              <Tooltip
-                contentStyle={{ background: "#1a1a1a", border: "1px solid #333" }}
-              />
+              <Tooltip contentStyle={{ background: "#1a1a1a", border: "1px solid #333" }} />
               <Legend />
             </PieChart>
           </ResponsiveContainer>
         </div>
 
-        {/* BAR CHART - Type Distribution */}
-        <div
-          style={{
-            border: "1px solid #222",
-            borderRadius: "20px",
-            padding: "1.5rem",
-            background: "#0b0b0b",
-          }}
-        >
-          <h3 style={{ marginBottom: "1rem", color: "#00ff66" }}>
-            📊 Scan Type Distribution
-          </h3>
+        {/* Bar Chart - Type Distribution (including files) */}
+        <div style={{ border: "1px solid #222", borderRadius: "20px", padding: "1.5rem", background: "#0b0b0b" }}>
+          <h3 style={{ marginBottom: "1rem", color: "#00ff66" }}>📊 Scan Type Distribution</h3>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={stats.type_distribution || []}>
               <CartesianGrid strokeDasharray="3 3" stroke="#333" />
               <XAxis dataKey="type" stroke="#9ca3af" />
               <YAxis stroke="#9ca3af" />
-              <Tooltip
-                contentStyle={{ background: "#1a1a1a", border: "1px solid #333" }}
-              />
+              <Tooltip contentStyle={{ background: "#1a1a1a", border: "1px solid #333" }} />
               <Bar dataKey="count" radius={[10, 10, 0, 0]}>
                 {(stats.type_distribution || []).map((entry, index) => (
-                  <Cell
-                    key={`cell-${index}`}
-                    fill={entry.type === "email" ? "#00ff66" : "#ffaa00"}
-                  />
+                  <Cell key={`cell-${index}`} fill={getTypeColor(entry.type)} />
                 ))}
               </Bar>
             </BarChart>
           </ResponsiveContainer>
         </div>
 
-        {/* BAR CHART - Confidence by Risk Level */}
-        <div
-          style={{
-            border: "1px solid #222",
-            borderRadius: "20px",
-            padding: "1.5rem",
-            background: "#0b0b0b",
-          }}
-        >
-          <h3 style={{ marginBottom: "1rem", color: "#00ff66" }}>
-            🎯 AI Confidence by Risk Level
-          </h3>
+        {/* Confidence by Risk Level */}
+        <div style={{ border: "1px solid #222", borderRadius: "20px", padding: "1.5rem", background: "#0b0b0b" }}>
+          <h3 style={{ marginBottom: "1rem", color: "#00ff66" }}>🎯 AI Confidence by Risk Level</h3>
           <ResponsiveContainer width="100%" height={300}>
-            <BarChart
-              data={stats.avg_confidence_by_risk || []}
-              layout="vertical"
-            >
+            <BarChart data={stats.avg_confidence_by_risk || []} layout="vertical">
               <CartesianGrid strokeDasharray="3 3" stroke="#333" />
               <XAxis type="number" domain={[0, 100]} stroke="#9ca3af" />
               <YAxis type="category" dataKey="risk_level" stroke="#9ca3af" />
               <Tooltip
                 contentStyle={{ background: "#1a1a1a", border: "1px solid #333" }}
-                formatter={(value) => [
-                  `${Number(value ?? 0).toFixed(1)}%`,
-                  "Confidence",
-                ]}
+                formatter={(value) => [`${Number(value ?? 0).toFixed(1)}%`, "Confidence"]}
               />
               <Bar dataKey="avg_confidence" radius={[0, 10, 10, 0]}>
                 {(stats.avg_confidence_by_risk || []).map((entry, index) => (
-                  <Cell
-                    key={`cell-${index}`}
-                    fill={getRiskColor(entry.risk_level)}
-                  />
+                  <Cell key={`cell-${index}`} fill={getRiskColor(entry.risk_level)} />
                 ))}
               </Bar>
             </BarChart>
@@ -489,7 +399,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Recent Scans Table */}
+      {/* Recent Scans Table - Updated for files */}
       <div
         style={{
           border: "1px solid #222",
@@ -499,31 +409,17 @@ export default function Dashboard() {
           marginBottom: "2rem",
         }}
       >
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: "1.5rem",
-          }}
-        >
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
           <h2>🛡️ Recent Scans</h2>
-          <span style={{ color: "#00ff66", fontSize: "0.875rem" }}>
-            Last 10 scans
-          </span>
+          <span style={{ color: "#00ff66", fontSize: "0.875rem" }}>Last 10 scans</span>
         </div>
 
         <div style={{ overflowX: "auto" }}>
-          <table
-            style={{
-              width: "100%",
-              borderCollapse: "collapse",
-            }}
-          >
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr style={{ borderBottom: "2px solid #222", color: "#9ca3af" }}>
                 <th align="left" style={{ padding: "12px 0" }}>Type</th>
-                <th align="left" style={{ padding: "12px 0" }}>Input</th>
+                <th align="left" style={{ padding: "12px 0" }}>Input / File</th>
                 <th align="left" style={{ padding: "12px 0" }}>Risk Level</th>
                 <th align="left" style={{ padding: "12px 0" }}>Confidence</th>
               </tr>
@@ -532,18 +428,16 @@ export default function Dashboard() {
               {stats.recent_scans?.map((scan, index) => (
                 <tr
                   key={index}
-                  style={{ borderBottom: "1px solid #222" }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = "#1a1a1a";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = "transparent";
-                  }}
+                  style={{ borderBottom: "1px solid #222", cursor: "pointer" }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = "#1a1a1a"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
                 >
                   <td style={{ padding: "12px 0" }}>
                     <span
                       style={{
-                        background: scan.type === "email" ? "rgba(0,255,102,0.1)" : "rgba(255,170,0,0.1)",
+                        background: scan.type === "email" ? "rgba(0,255,102,0.1)" :
+                          scan.type === "file" ? "rgba(74,144,226,0.1)" :
+                            "rgba(255,170,0,0.1)",
                         padding: "4px 8px",
                         borderRadius: "6px",
                         fontSize: "0.75rem",
@@ -554,20 +448,13 @@ export default function Dashboard() {
                     </span>
                   </td>
                   <td style={{ maxWidth: "400px", wordBreak: "break-word" }}>
-                    {scan.input.length > 60 ? scan.input.slice(0, 60) + "..." : scan.input}
+                    {getDisplayText(scan)}
                   </td>
                   <td style={{ color: getRiskColor(scan.risk_level), fontWeight: "bold" }}>
                     {scan.risk_level || "UNKNOWN"}
                   </td>
                   <td>
-                    <div
-                      style={{
-                        background: "#1a1a1a",
-                        borderRadius: "10px",
-                        overflow: "hidden",
-                        width: "80px",
-                      }}
-                    >
+                    <div style={{ background: "#1a1a1a", borderRadius: "10px", overflow: "hidden", width: "80px" }}>
                       <div
                         style={{
                           width: `${scan.confidence || 0}%`,
@@ -602,26 +489,21 @@ export default function Dashboard() {
           <span style={{ fontSize: "1.5rem" }}>🤖</span>
           <h2 style={{ color: "#00ff66" }}>AI Intelligence Report</h2>
         </div>
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-            gap: "1rem",
-          }}
-        >
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem" }}>
           <div style={{ padding: "1rem", background: "#1a1a1a", borderRadius: "12px" }}>
             <strong>Scan Efficiency</strong>
-            <p style={{ fontSize: "1.5rem", marginTop: "0.5rem" }}>
-              {stats.detection_rate}%
-            </p>
+            <p style={{ fontSize: "1.5rem", marginTop: "0.5rem" }}>{stats.detection_rate}%</p>
             <small>Detection accuracy</small>
           </div>
           <div style={{ padding: "1rem", background: "#1a1a1a", borderRadius: "12px" }}>
             <strong>Total Threats</strong>
-            <p style={{ fontSize: "1.5rem", marginTop: "0.5rem" }}>
-              {stats.threats_detected}
-            </p>
+            <p style={{ fontSize: "1.5rem", marginTop: "0.5rem" }}>{stats.threats_detected}</p>
             <small>Security incidents</small>
+          </div>
+          <div style={{ padding: "1rem", background: "#1a1a1a", borderRadius: "12px" }}>
+            <strong>Files Scanned</strong>
+            <p style={{ fontSize: "1.5rem", marginTop: "0.5rem" }}>{stats.file_scans}</p>
+            <small>Documents analyzed</small>
           </div>
           <div style={{ padding: "1rem", background: "#1a1a1a", borderRadius: "12px" }}>
             <strong>Risk Score</strong>
