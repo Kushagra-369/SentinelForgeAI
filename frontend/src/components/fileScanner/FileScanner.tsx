@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import type { DragEvent } from "react";
 import axios from "axios";
-
+import API_URL from "../GlobalAPIURL";
 // ========== Type Definitions ==========
 interface ScanResult {
   risk_level: "CRITICAL" | "HIGH" | "MEDIUM" | "LOW" | "SAFE";
@@ -41,7 +41,7 @@ export default function FileScanner() {
       formData.append("file", file);
 
       const response = await axios.post<ScanResult>(
-        "http://127.0.0.1:8000/file/scan",
+        `${API_URL}/file/scan`,
         formData,
         {
           headers: {
@@ -78,7 +78,7 @@ Confidence: ${result.confidence}%
 Classification: ${result.is_malicious ? "MALICIOUS" : "SAFE"}
 Indicators: ${result.reasons.join(", ")}
       `.trim();
-      
+
       navigator.clipboard.writeText(textToCopy);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
@@ -99,7 +99,7 @@ Indicators: ${result.reasons.join(", ")}
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-    
+
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       const droppedFile = e.dataTransfer.files[0];
       setFile(droppedFile);
@@ -198,7 +198,7 @@ Indicators: ${result.reasons.join(", ")}
               margin: "0 auto",
             }}
           >
-            Upload files to detect malware indicators, suspicious extensions, 
+            Upload files to detect malware indicators, suspicious extensions,
             potentially dangerous executables, and other security risks.
           </p>
         </div>
@@ -375,7 +375,7 @@ Indicators: ${result.reasons.join(", ")}
                 💡 Pro Tip
               </p>
               <p style={{ color: "#9ca3af", fontSize: "0.875rem" }}>
-                Our AI analyzes file signatures, embedded macros, suspicious patterns, 
+                Our AI analyzes file signatures, embedded macros, suspicious patterns,
                 and checks against known malware databases.
               </p>
             </div>
@@ -384,9 +384,9 @@ Indicators: ${result.reasons.join(", ")}
           {/* Result Panel */}
           <div
             style={{
-              border: result 
-                ? result.is_malicious 
-                  ? "1px solid rgba(255,0,0,0.3)" 
+              border: result
+                ? result.is_malicious
+                  ? "1px solid rgba(255,0,0,0.3)"
                   : "1px solid rgba(0,255,102,0.3)"
                 : "1px solid #222",
               borderRadius: "24px",
@@ -675,7 +675,7 @@ Indicators: ${result.reasons.join(", ")}
           </p>
         </div>
       </div>
-      
+
       <style>{`
         @keyframes spin {
           to { transform: rotate(360deg); }

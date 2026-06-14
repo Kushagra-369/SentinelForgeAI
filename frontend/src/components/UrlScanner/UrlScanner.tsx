@@ -1,6 +1,6 @@
 import { useState } from "react";
 import axios from "axios";
-
+import API_URL from "../GlobalAPIURL";
 // ========== Type Definitions ==========
 interface ScanResult {
   risk_level: "CRITICAL" | "HIGH" | "MEDIUM" | "LOW" | "SAFE";
@@ -34,7 +34,7 @@ export default function UrlScanner() {
     try {
       setLoading(true);
       const response = await axios.post<ScanResult>(
-        "http://localhost:8000/url/scan",
+        `${API_URL}/url/scan`,
         { url: url }
       );
       setResult(response.data);
@@ -62,7 +62,7 @@ Confidence: ${result.confidence}%
 Classification: ${result.is_malicious ? "MALICIOUS" : "SAFE"}
 Indicators: ${result.reasons.join(", ")}
       `.trim();
-      
+
       navigator.clipboard.writeText(textToCopy);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
@@ -162,7 +162,7 @@ Indicators: ${result.reasons.join(", ")}
               margin: "0 auto",
             }}
           >
-            Analyze suspicious URLs and domains for phishing, malware distribution, 
+            Analyze suspicious URLs and domains for phishing, malware distribution,
             spoofing attempts, and malicious indicators.
           </p>
         </div>
@@ -299,7 +299,7 @@ Indicators: ${result.reasons.join(", ")}
                 💡 Pro Tip
               </p>
               <p style={{ color: "#9ca3af", fontSize: "0.875rem" }}>
-                Our AI analyzes URL structure, domain age, SSL certificates, redirect chains, 
+                Our AI analyzes URL structure, domain age, SSL certificates, redirect chains,
                 and checks against known threat databases.
               </p>
             </div>
@@ -308,9 +308,9 @@ Indicators: ${result.reasons.join(", ")}
           {/* Result Panel */}
           <div
             style={{
-              border: result 
-                ? result.is_malicious 
-                  ? "1px solid rgba(255,0,0,0.3)" 
+              border: result
+                ? result.is_malicious
+                  ? "1px solid rgba(255,0,0,0.3)"
                   : "1px solid rgba(0,255,102,0.3)"
                 : "1px solid #222",
               borderRadius: "24px",
@@ -586,7 +586,7 @@ Indicators: ${result.reasons.join(", ")}
           ))}
         </div>
       </div>
-      
+
       <style>{`
         @keyframes spin {
           to { transform: rotate(360deg); }

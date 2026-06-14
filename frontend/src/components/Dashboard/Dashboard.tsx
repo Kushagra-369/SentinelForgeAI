@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
+import API_URL from "../GlobalAPIURL";
 import {
   LineChart,
   Line,
@@ -81,7 +82,7 @@ export default function Dashboard() {
       try {
         setError(null);
         const response = await axios.get<DashboardStats>(
-          `http://127.0.0.1:8000/dashboard/stats?days=${timeRange}`
+          `${API_URL}/dashboard/stats?days=${timeRange}`
         );
         setStats(response.data);
       } catch (err) {

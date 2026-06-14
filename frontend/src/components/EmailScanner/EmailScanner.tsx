@@ -1,5 +1,6 @@
 import { useState } from "react";
 import axios from "axios";
+import API_URL from "../GlobalAPIURL";
 
 // ========== Type Definitions ==========
 interface ScanResult {
@@ -27,7 +28,7 @@ export default function EmailScanner() {
     try {
       setLoading(true);
       const response = await axios.post<ScanResult>(
-        "http://127.0.0.1:8000/email/scan",
+        `${API_URL}/email/scan`,
         { text: email }
       );
       setResult(response.data);
@@ -54,7 +55,7 @@ Confidence: ${result.confidence}%
 Classification: ${result.is_spam ? "SPAM" : "SAFE"}
 Indicators: ${result.reasons.join(", ")}
       `.trim();
-      
+
       navigator.clipboard.writeText(textToCopy);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
@@ -145,7 +146,7 @@ Indicators: ${result.reasons.join(", ")}
               margin: "0 auto",
             }}
           >
-            Paste any suspicious email and let SentinelForge AI analyze phishing indicators, 
+            Paste any suspicious email and let SentinelForge AI analyze phishing indicators,
             malicious intent, spam patterns, and threat severity.
           </p>
         </div>
@@ -279,7 +280,7 @@ Indicators: ${result.reasons.join(", ")}
                 💡 Pro Tip
               </p>
               <p style={{ color: "#9ca3af", fontSize: "0.875rem" }}>
-                Our AI analyzes email headers, suspicious links, urgent language, 
+                Our AI analyzes email headers, suspicious links, urgent language,
                 sender patterns, and common phishing indicators.
               </p>
             </div>
@@ -546,7 +547,7 @@ Indicators: ${result.reasons.join(", ")}
           ))}
         </div>
       </div>
-      
+
       <style>{`
         @keyframes spin {
           to { transform: rotate(360deg); }
