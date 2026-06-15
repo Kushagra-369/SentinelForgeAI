@@ -30,19 +30,22 @@ def scan(data: EmailRequest):
 
     # Increase usage count
     increment_usage(user_id, "email")
+    print("EMAIL COUNT INCREMENTED")
 
     # Save scan history
-    scans_collection.insert_one({
-        "type": "email",
-        "user_id": user_id,
-        "plan": plan,
-        "input": data.text,
-        "is_spam": result.get("is_spam"),
-        "risk_level": result.get("risk_level"),
-        "confidence": result.get("confidence"),
-        "reasons": result.get("reasons", []),
-        "created_at": datetime.utcnow()
-    })
+    # Save history only for logged-in users
+    if plan != "guest":
+        scans_collection.insert_one({
+            "type": "email",
+            "user_id": user_id,
+            "plan": plan,
+            "input": data.text,
+            "is_spam": result.get("is_spam"),
+            "risk_level": result.get("risk_level"),
+            "confidence": result.get("confidence"),
+            "reasons": result.get("reasons", []),
+            "created_at": datetime.utcnow()
+        })
 
     return {
         "success": True,

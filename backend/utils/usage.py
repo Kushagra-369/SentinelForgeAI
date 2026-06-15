@@ -39,6 +39,7 @@ def check_usage(user_id, scan_type, plan):
     )
     print("CURRENT:", current)
     print("LIMIT:", limit)
+    print("ALLOWED:", current < limit)
 
     return current < limit
 
@@ -49,7 +50,7 @@ def increment_usage(
 ):
     today = get_today()
 
-    usage_collection.update_one(
+    result = usage_collection.update_one(
         {
             "user_id": user_id,
             "date": today
@@ -61,3 +62,5 @@ def increment_usage(
         },
         upsert=True
     )
+
+    print("USAGE UPDATED")
