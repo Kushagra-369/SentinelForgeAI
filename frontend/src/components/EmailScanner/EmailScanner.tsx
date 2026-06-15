@@ -39,9 +39,17 @@ export default function EmailScanner() {
 
     try {
       setLoading(true);
+      const user = JSON.parse(
+        localStorage.getItem("user") || "null"
+      );
+
       const response = await axios.post<ScanResult>(
         `${API_URL}/email/scan`,
-        { text: email }
+        {
+          text: email,
+          user_id: user?.google_id,
+          plan: user?.plan || "guest"
+        }
       );
       setResult(response.data);
     } catch (error) {
@@ -550,10 +558,10 @@ Indicators: ${result.reasons.join(", ")}
           style={{
             marginTop: "4rem",
             display: "grid",
-            gridTemplateColumns: isMobile 
-              ? "1fr" 
-              : isTablet 
-                ? "repeat(2, 1fr)" 
+            gridTemplateColumns: isMobile
+              ? "1fr"
+              : isTablet
+                ? "repeat(2, 1fr)"
                 : "repeat(auto-fit, minmax(250px, 1fr))",
             gap: "1.5rem",
           }}
