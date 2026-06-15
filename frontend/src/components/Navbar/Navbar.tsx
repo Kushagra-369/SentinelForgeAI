@@ -1,12 +1,18 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import "./Navbar.css";
+import axios from "axios";
+import { GoogleLogin, googleLogout } from "@react-oauth/google";
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
   const [isScrolled, setIsScrolled] = useState<boolean>(false);
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
   const location = useLocation();
+  const [user, setUser] = useState<any>(null);
+  const [showGoogleLogin, setShowGoogleLogin] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     const handleScroll = (): void => {
@@ -28,6 +34,35 @@ const Navbar = () => {
     };
   }, [isMenuOpen]);
 
+  useEffect(() => {
+    // Check for existing user session
+    const savedUser = localStorage.getItem("user");
+    const token = localStorage.getItem("auth_token");
+    
+    if (savedUser && token) {
+      setUser(JSON.parse(savedUser));
+      
+      // Verify token with backend
+      verifyToken(token);
+    }
+  }, []);
+
+  const verifyToken = async (token: string) => {
+    try {
+      const response = await axios.post(
+        "https://sentinelforgeai.onrender.com/auth/verify",
+        { token }
+      );
+      if (!response.data.valid) {
+        // Token invalid, logout
+        handleLogout();
+      }
+    } catch (error) {
+      console.error("Token verification failed:", error);
+      handleLogout();
+    }
+  };
+
   const toggleMenu = (): void => {
     setIsMenuOpen((prev) => !prev);
   };
@@ -45,10 +80,66 @@ const Navbar = () => {
     { path: "/about", label: "About" },
   ];
 
+  const handleGoogleSuccess = async (credentialResponse: any) => {
+    setIsLoading(true);
+    try {
+      console.log("Google credential received:", credentialResponse);
+      
+      const res = await axios.post(
+        "https://sentinelforgeai.onrender.com/auth/google",
+        {
+          token: credentialResponse.credential,
+        }
+      );
+
+      console.log("Server response:", res.data);
+
+      if (res.data && res.data.user) {
+        setUser(res.data.user);
+        localStorage.setItem("user", JSON.stringify(res.data.user));
+        localStorage.setItem("auth_token", res.data.token || credentialResponse.credential);
+        setShowGoogleLogin(false);
+      } else {
+        console.error("Invalid response structure:", res.data);
+        alert("Login failed: Invalid server response");
+      }
+    } catch (error: any) {
+      console.log("FULL ERROR:", error);
+      console.log("RESPONSE:", error?.response?.data);
+      console.log("ERROR MESSAGE:", error?.message);
+      
+      let errorMessage = "Failed to sign in with Google. Please try again.";
+      if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+      
+      alert(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGoogleError = () => {
+    console.log("Google Login Failed");
+    alert("Google sign-in failed. Please try again.");
+    setShowGoogleLogin(false);
+  };
+
+  const handleLogout = () => {
+    googleLogout();
+    localStorage.removeItem("user");
+    localStorage.removeItem("auth_token");
+    setUser(null);
+    setShowMenu(false);
+    setShowGoogleLogin(false);
+  };
+
   return (
     <>
       <nav className={`navbar ${isScrolled ? "navbar--scrolled" : ""}`}>
-        <div className="navbar__container py-3">
+        <div className="navbar__container">
           {/* Left - Logo */}
           <Link to="/" className="navbar__logo" onClick={closeMenu}>
             <div className="navbar__logo-icon-wrapper">
@@ -60,20 +151,8 @@ const Navbar = () => {
             </span>
           </Link>
 
-          {/* Hamburger Menu Button (Mobile) */}
-          <button
-            className={`navbar__hamburger ${isMenuOpen ? "navbar__hamburger--active" : ""}`}
-            onClick={toggleMenu}
-            aria-label="Toggle menu"
-            aria-expanded={isMenuOpen}
-          >
-            <span></span>
-            <span></span>
-            <span></span>
-          </button>
-
-          {/* Center - Navigation Links */}
-          <ul className={`navbar__links ${isMenuOpen ? "navbar__links--active" : ""}`}>
+          {/* Center - Navigation Links (Desktop) */}
+          <ul className="navbar__links">
             {navItems.map((item) => (
               <li
                 key={item.path}
@@ -100,28 +179,192 @@ const Navbar = () => {
             ))}
           </ul>
 
-          {/* Right - Social Icons */}
-          <div className="navbar__social">
-            <a
-              className="navbar__social-link"
-              href="https://github.com/Kushagra-369"
-              target="_blank"
-              rel="noreferrer noopener"
-              aria-label="GitHub"
-            >
-              <GitHubIcon />
-              <span className="navbar__social-tooltip">GitHub</span>
-            </a>
-            <a
-              className="navbar__social-link"
-              href="https://www.linkedin.com/in/kushagra-chhabra-83b215355/"
-              target="_blank"
-              rel="noreferrer noopener"
-              aria-label="LinkedIn"
-            >
-              <LinkedInIcon />
-              <span className="navbar__social-tooltip">LinkedIn</span>
-            </a>
+          {/* Right - Social Icons & Sign In */}
+          <div className="navbar__right">
+            <div className="navbar__social">
+              <a
+                className="navbar__social-link"
+                href="https://github.com/Kushagra-369"
+                target="_blank"
+                rel="noreferrer noopener"
+                aria-label="GitHub"
+              >
+                <GitHubIcon />
+                <span className="navbar__social-tooltip">GitHub</span>
+              </a>
+              <a
+                className="navbar__social-link"
+                href="https://www.linkedin.com/in/kushagra-chhabra-83b215355/"
+                target="_blank"
+                rel="noreferrer noopener"
+                aria-label="LinkedIn"
+              >
+                <LinkedInIcon />
+                <span className="navbar__social-tooltip">LinkedIn</span>
+              </a>
+            </div>
+
+            {/* Sign In Section */}
+            {!user ? (
+              <div className="navbar__signin-wrapper">
+                <button
+                  className="navbar__signin-btn"
+                  onClick={() => setShowGoogleLogin(!showGoogleLogin)}
+                  disabled={isLoading}
+                >
+                  {isLoading ? "Signing In..." : "Sign In"}
+                </button>
+
+                {showGoogleLogin && (
+                  <div className="navbar__google-box" onClick={(e) => e.stopPropagation()}>
+                    <GoogleLogin
+                      onSuccess={handleGoogleSuccess}
+                      onError={handleGoogleError}
+                      useOneTap={false}
+                      theme="filled_black"
+                      size="large"
+                      text="signin_with"
+                      shape="rectangular"
+                      logo_alignment="center"
+                    />
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="navbar__profile">
+                <img
+                  src={user.picture || user.avatar || "https://via.placeholder.com/40"}
+                  alt={user.name || "Profile"}
+                  className="navbar__avatar"
+                  onClick={() => setShowMenu(!showMenu)}
+                  referrerPolicy="no-referrer"
+                />
+                <div className="navbar__profile-info">
+                  <span className="navbar__profile-name">{user.name?.split(" ")[0] || "User"}</span>
+                </div>
+
+                {showMenu && (
+                  <div className="navbar__dropdown">
+                    <div className="navbar__dropdown-user">
+                      <img 
+                        src={user.picture || user.avatar} 
+                        alt={user.name} 
+                        className="navbar__dropdown-avatar"
+                      />
+                      <div>
+                        <div className="navbar__dropdown-name">{user.name}</div>
+                        <div className="navbar__dropdown-email">{user.email}</div>
+                      </div>
+                    </div>
+                    <div className="navbar__dropdown-divider"></div>
+                    <Link to="/dashboard" onClick={() => setShowMenu(false)}>
+                      📊 Dashboard
+                    </Link>
+                    <Link to="/pricing" onClick={() => setShowMenu(false)}>
+                      💎 Buy Plan
+                    </Link>
+                    <Link to="/settings" onClick={() => setShowMenu(false)}>
+                      ⚙️ Settings
+                    </Link>
+                    <div className="navbar__dropdown-divider"></div>
+                    <button onClick={handleLogout}>
+                      🚪 Logout
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Hamburger Menu Button (Mobile) */}
+          <button
+            className={`navbar__hamburger ${isMenuOpen ? "navbar__hamburger--active" : ""}`}
+            onClick={toggleMenu}
+            aria-label="Toggle menu"
+            aria-expanded={isMenuOpen}
+          >
+            <span></span>
+            <span></span>
+            <span></span>
+          </button>
+        </div>
+
+        {/* Mobile Menu */}
+        <div className={`navbar__mobile-menu ${isMenuOpen ? "navbar__mobile-menu--active" : ""}`}>
+          <div className="navbar__mobile-menu-content">
+            {navItems.map((item) => (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={`navbar__mobile-link ${location.pathname === item.path ? "navbar__mobile-link--active" : ""}`}
+                onClick={closeMenu}
+              >
+                <span>{item.label}</span>
+                {item.hasBadge && (
+                  <span className="navbar__badge">
+                    <span className="navbar__badge-text">New</span>
+                  </span>
+                )}
+              </Link>
+            ))}
+            
+            <div className="navbar__mobile-divider"></div>
+            
+            {/* Mobile Social Links */}
+            <div className="navbar__mobile-social">
+              <a
+                className="navbar__mobile-social-link"
+                href="https://github.com/Kushagra-369"
+                target="_blank"
+                rel="noreferrer noopener"
+              >
+                <GitHubIcon />
+                <span>GitHub</span>
+              </a>
+              <a
+                className="navbar__mobile-social-link"
+                href="https://www.linkedin.com/in/kushagra-chhabra-83b215355/"
+                target="_blank"
+                rel="noreferrer noopener"
+              >
+                <LinkedInIcon />
+                <span>LinkedIn</span>
+              </a>
+            </div>
+            
+            {/* Mobile Auth Section */}
+            <div className="navbar__mobile-auth">
+              {!user ? (
+                <button 
+                  className="navbar__mobile-signin-btn"
+                  onClick={() => {
+                    setShowGoogleLogin(true);
+                    closeMenu();
+                  }}
+                >
+                  Sign In
+                </button>
+              ) : (
+                <>
+                  <div className="navbar__mobile-user">
+                    <img src={user.picture} alt={user.name} />
+                    <div>
+                      <div>{user.name}</div>
+                      <div className="navbar__mobile-user-email">{user.email}</div>
+                    </div>
+                  </div>
+                  <button 
+                    className="navbar__mobile-logout-btn"
+                    onClick={() => {
+                      handleLogout();
+                      closeMenu();
+                    }}
+                  >
+                    Logout
+                  </button>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </nav>

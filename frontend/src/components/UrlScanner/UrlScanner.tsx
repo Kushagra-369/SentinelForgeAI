@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import axios from "axios";
 import API_URL from "../GlobalAPIURL";
+
 // ========== Type Definitions ==========
 interface ScanResult {
   risk_level: "CRITICAL" | "HIGH" | "MEDIUM" | "LOW" | "SAFE";
@@ -17,6 +18,18 @@ export default function UrlScanner() {
   const [result, setResult] = useState<ScanResult | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [copied, setCopied] = useState<boolean>(false);
+  const [isMobile, setIsMobile] = useState<boolean>(false);
+  const [isTablet, setIsTablet] = useState<boolean>(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+      setIsTablet(window.innerWidth >= 768 && window.innerWidth < 1024);
+    };
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   const handleScan = async () => {
     if (!url.trim()) {
@@ -24,7 +37,6 @@ export default function UrlScanner() {
       return;
     }
 
-    // Basic URL validation
     const urlPattern = /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/;
     if (!urlPattern.test(url)) {
       alert("Please enter a valid URL");
@@ -112,7 +124,7 @@ Indicators: ${result.reasons.join(", ")}
     <main
       style={{
         minHeight: "100vh",
-        padding: "8rem 8%",
+        padding: isMobile ? "6rem 5% 3rem" : isTablet ? "7rem 6% 4rem" : "8rem 8% 5rem",
         color: "white",
         background: "linear-gradient(135deg, #0a0a0a 0%, #0f0f0f 100%)",
       }}
@@ -124,11 +136,11 @@ Indicators: ${result.reasons.join(", ")}
         }}
       >
         {/* Header Section */}
-        <div style={{ marginBottom: "4rem", textAlign: "center" }}>
+        <div style={{ marginBottom: isMobile ? "2rem" : "4rem", textAlign: "center" }}>
           <span
             style={{
               color: "#00ff66",
-              fontSize: "0.9rem",
+              fontSize: isMobile ? "0.75rem" : "0.9rem",
               fontWeight: 600,
               letterSpacing: "2px",
               background: "rgba(0,255,102,0.1)",
@@ -142,7 +154,7 @@ Indicators: ${result.reasons.join(", ")}
 
           <h1
             style={{
-              fontSize: "4rem",
+              fontSize: isMobile ? "2rem" : isTablet ? "3rem" : "4rem",
               marginTop: "1.5rem",
               marginBottom: "1rem",
               background: "linear-gradient(135deg, #fff 0%, #00ff66 100%)",
@@ -160,6 +172,8 @@ Indicators: ${result.reasons.join(", ")}
               maxWidth: "700px",
               lineHeight: 1.8,
               margin: "0 auto",
+              fontSize: isMobile ? "0.9rem" : "1rem",
+              padding: isMobile ? "0 1rem" : "0",
             }}
           >
             Analyze suspicious URLs and domains for phishing, malware distribution,
@@ -170,20 +184,22 @@ Indicators: ${result.reasons.join(", ")}
         {/* Main Layout */}
         <div
           style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 450px",
-            gap: "2rem",
+            display: "flex",
+            flexDirection: isMobile ? "column" : "row",
+            gap: "1.5rem",
             alignItems: "start",
           }}
         >
           {/* Input Panel */}
           <div
             style={{
+              flex: isMobile ? "1" : isTablet ? "1.2" : "1",
               border: "1px solid #222",
               borderRadius: "24px",
-              padding: "2rem",
+              padding: isMobile ? "1.5rem" : "2rem",
               background: "#0b0b0b",
               transition: "transform 0.2s, box-shadow 0.2s",
+              width: "100%",
             }}
           >
             <div
@@ -192,9 +208,11 @@ Indicators: ${result.reasons.join(", ")}
                 justifyContent: "space-between",
                 alignItems: "center",
                 marginBottom: "1.5rem",
+                flexWrap: "wrap",
+                gap: "0.5rem",
               }}
             >
-              <h2 style={{ fontSize: "1.5rem" }}>🌐 URL Input</h2>
+              <h2 style={{ fontSize: isMobile ? "1.3rem" : "1.5rem" }}>🌐 URL Input</h2>
               {url && (
                 <button
                   onClick={handleClear}
@@ -226,7 +244,7 @@ Indicators: ${result.reasons.join(", ")}
                 borderRadius: "12px",
                 color: "white",
                 outline: "none",
-                fontSize: "1rem",
+                fontSize: isMobile ? "0.9rem" : "1rem",
                 fontFamily: "monospace",
               }}
               onKeyPress={(e) => {
@@ -248,7 +266,7 @@ Indicators: ${result.reasons.join(", ")}
                 disabled={loading || !url.trim()}
                 style={{
                   flex: 1,
-                  padding: "14px 24px",
+                  padding: isMobile ? "12px 20px" : "14px 24px",
                   border: "none",
                   borderRadius: "12px",
                   background: loading || !url.trim() ? "#333" : "#00ff66",
@@ -260,6 +278,7 @@ Indicators: ${result.reasons.join(", ")}
                   alignItems: "center",
                   justifyContent: "center",
                   gap: "8px",
+                  fontSize: isMobile ? "0.9rem" : "1rem",
                 }}
               >
                 {loading ? (
@@ -308,16 +327,19 @@ Indicators: ${result.reasons.join(", ")}
           {/* Result Panel */}
           <div
             style={{
+              flex: isMobile ? "1" : isTablet ? "0.9" : "0.8",
+              minWidth: isMobile ? "100%" : isTablet ? "350px" : "450px",
               border: result
                 ? result.is_malicious
                   ? "1px solid rgba(255,0,0,0.3)"
                   : "1px solid rgba(0,255,102,0.3)"
                 : "1px solid #222",
               borderRadius: "24px",
-              padding: "2rem",
+              padding: isMobile ? "1.5rem" : "2rem",
               background: "#0b0b0b",
               position: "relative",
               transition: "all 0.3s",
+              width: "100%",
             }}
           >
             <div
@@ -326,9 +348,11 @@ Indicators: ${result.reasons.join(", ")}
                 justifyContent: "space-between",
                 alignItems: "center",
                 marginBottom: "1.5rem",
+                flexWrap: "wrap",
+                gap: "0.5rem",
               }}
             >
-              <h2 style={{ fontSize: "1.5rem" }}>📊 Scan Result</h2>
+              <h2 style={{ fontSize: isMobile ? "1.3rem" : "1.5rem" }}>📊 Scan Result</h2>
               {result && (
                 <button
                   onClick={handleCopyResult}
@@ -352,20 +376,22 @@ Indicators: ${result.reasons.join(", ")}
               <div
                 style={{
                   textAlign: "center",
-                  padding: "3rem 1rem",
+                  padding: isMobile ? "2rem 1rem" : "3rem 1rem",
                   color: "#9ca3af",
                 }}
               >
                 <span style={{ fontSize: "4rem", display: "block", marginBottom: "1rem" }}>
                   🔒
                 </span>
-                <p>Enter a URL and click "Scan URL" to see results</p>
+                <p style={{ fontSize: isMobile ? "0.9rem" : "1rem" }}>
+                  Enter a URL and click "Scan URL" to see results
+                </p>
               </div>
             ) : loading ? (
               <div
                 style={{
                   textAlign: "center",
-                  padding: "3rem 1rem",
+                  padding: isMobile ? "2rem 1rem" : "3rem 1rem",
                 }}
               >
                 <span
@@ -392,7 +418,7 @@ Indicators: ${result.reasons.join(", ")}
                   <div
                     style={{
                       marginBottom: "1.5rem",
-                      padding: "1.5rem",
+                      padding: isMobile ? "1rem" : "1.5rem",
                       background: `linear-gradient(135deg, ${getRiskColor(result.risk_level)}10, transparent)`,
                       borderRadius: "16px",
                       border: `1px solid ${getRiskColor(result.risk_level)}30`,
@@ -404,7 +430,7 @@ Indicators: ${result.reasons.join(", ")}
                     <h3
                       style={{
                         color: getRiskColor(result.risk_level),
-                        fontSize: "2rem",
+                        fontSize: isMobile ? "1.5rem" : "2rem",
                         fontWeight: "bold",
                       }}
                     >
@@ -419,9 +445,12 @@ Indicators: ${result.reasons.join(", ")}
                         display: "flex",
                         justifyContent: "space-between",
                         marginBottom: "0.5rem",
+                        flexWrap: "wrap",
                       }}
                     >
-                      <p style={{ color: "#9ca3af" }}>Confidence Score</p>
+                      <p style={{ color: "#9ca3af", fontSize: isMobile ? "0.85rem" : "1rem" }}>
+                        Confidence Score
+                      </p>
                       <p style={{ color: getConfidenceColor(result.confidence), fontWeight: "bold" }}>
                         {result.confidence}%
                       </p>
@@ -447,14 +476,16 @@ Indicators: ${result.reasons.join(", ")}
 
                   {/* Domain Information */}
                   <div style={{ marginBottom: "1.5rem" }}>
-                    <p style={{ color: "#9ca3af", marginBottom: "0.5rem" }}>Domain</p>
+                    <p style={{ color: "#9ca3af", marginBottom: "0.5rem", fontSize: isMobile ? "0.85rem" : "1rem" }}>
+                      Domain
+                    </p>
                     <div
                       style={{
                         background: "#050505",
                         padding: "0.75rem",
                         borderRadius: "8px",
                         fontFamily: "monospace",
-                        fontSize: "0.875rem",
+                        fontSize: isMobile ? "0.75rem" : "0.875rem",
                         wordBreak: "break-all",
                       }}
                     >
@@ -464,7 +495,9 @@ Indicators: ${result.reasons.join(", ")}
 
                   {/* Classification Badge */}
                   <div style={{ marginBottom: "1.5rem" }}>
-                    <p style={{ color: "#9ca3af", marginBottom: "0.5rem" }}>Classification</p>
+                    <p style={{ color: "#9ca3af", marginBottom: "0.5rem", fontSize: isMobile ? "0.85rem" : "1rem" }}>
+                      Classification
+                    </p>
                     <span
                       style={{
                         display: "inline-block",
@@ -490,6 +523,7 @@ Indicators: ${result.reasons.join(", ")}
                         display: "flex",
                         alignItems: "center",
                         gap: "8px",
+                        fontSize: isMobile ? "0.85rem" : "1rem",
                       }}
                     >
                       <span>🚨</span> Indicators & Reasons
@@ -497,7 +531,7 @@ Indicators: ${result.reasons.join(", ")}
 
                     <div
                       style={{
-                        maxHeight: "200px",
+                        maxHeight: isMobile ? "150px" : "200px",
                         overflowY: "auto",
                         paddingRight: "8px",
                       }}
@@ -508,7 +542,7 @@ Indicators: ${result.reasons.join(", ")}
                             display: "flex",
                             flexDirection: "column",
                             gap: "0.75rem",
-                            paddingLeft: "1.5rem",
+                            paddingLeft: isMobile ? "1rem" : "1.5rem",
                           }}
                         >
                           {result.reasons.map((reason: string, index: number) => (
@@ -516,7 +550,7 @@ Indicators: ${result.reasons.join(", ")}
                               key={index}
                               style={{
                                 color: "#d1d5db",
-                                fontSize: "0.875rem",
+                                fontSize: isMobile ? "0.8rem" : "0.875rem",
                                 lineHeight: 1.5,
                               }}
                             >
@@ -558,7 +592,11 @@ Indicators: ${result.reasons.join(", ")}
           style={{
             marginTop: "4rem",
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
+            gridTemplateColumns: isMobile 
+              ? "1fr" 
+              : isTablet 
+                ? "repeat(2, 1fr)" 
+                : "repeat(auto-fit, minmax(250px, 1fr))",
             gap: "1.5rem",
           }}
         >
@@ -575,12 +613,23 @@ Indicators: ${result.reasons.join(", ")}
                 background: "#0b0b0b",
                 borderRadius: "12px",
                 border: "1px solid #222",
+                transition: "transform 0.3s ease",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "translateY(-5px)";
+                e.currentTarget.style.borderColor = "#00ff66";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.borderColor = "#222";
               }}
             >
               <span style={{ fontSize: "2rem", display: "block", marginBottom: "0.5rem" }}>
                 {feature.icon}
               </span>
-              <h4 style={{ color: "#00ff66", marginBottom: "0.5rem" }}>{feature.title}</h4>
+              <h4 style={{ color: "#00ff66", marginBottom: "0.5rem", fontSize: isMobile ? "1rem" : "1.1rem" }}>
+                {feature.title}
+              </h4>
               <p style={{ color: "#9ca3af", fontSize: "0.875rem" }}>{feature.desc}</p>
             </div>
           ))}

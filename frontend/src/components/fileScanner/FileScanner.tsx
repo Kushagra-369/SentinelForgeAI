@@ -1,7 +1,8 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import type { DragEvent } from "react";
 import axios from "axios";
 import API_URL from "../GlobalAPIURL";
+
 // ========== Type Definitions ==========
 interface ScanResult {
   risk_level: "CRITICAL" | "HIGH" | "MEDIUM" | "LOW" | "SAFE";
@@ -21,7 +22,19 @@ export default function FileScanner() {
   const [loading, setLoading] = useState<boolean>(false);
   const [copied, setCopied] = useState<boolean>(false);
   const [dragActive, setDragActive] = useState<boolean>(false);
+  const [isMobile, setIsMobile] = useState<boolean>(false);
+  const [isTablet, setIsTablet] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+      setIsTablet(window.innerWidth >= 768 && window.innerWidth < 1024);
+    };
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   const handleScan = async () => {
     if (!file) {
@@ -148,7 +161,7 @@ Indicators: ${result.reasons.join(", ")}
     <main
       style={{
         minHeight: "100vh",
-        padding: "8rem 8%",
+        padding: isMobile ? "6rem 5% 3rem" : isTablet ? "7rem 6% 4rem" : "8rem 8% 5rem",
         color: "white",
         background: "linear-gradient(135deg, #0a0a0a 0%, #0f0f0f 100%)",
       }}
@@ -160,11 +173,11 @@ Indicators: ${result.reasons.join(", ")}
         }}
       >
         {/* Header Section */}
-        <div style={{ marginBottom: "4rem", textAlign: "center" }}>
+        <div style={{ marginBottom: isMobile ? "2rem" : "4rem", textAlign: "center" }}>
           <span
             style={{
               color: "#00ff66",
-              fontSize: "0.9rem",
+              fontSize: isMobile ? "0.75rem" : "0.9rem",
               fontWeight: 600,
               letterSpacing: "2px",
               background: "rgba(0,255,102,0.1)",
@@ -178,7 +191,7 @@ Indicators: ${result.reasons.join(", ")}
 
           <h1
             style={{
-              fontSize: "4rem",
+              fontSize: isMobile ? "2rem" : isTablet ? "3rem" : "4rem",
               marginTop: "1.5rem",
               marginBottom: "1rem",
               background: "linear-gradient(135deg, #fff 0%, #00ff66 100%)",
@@ -196,6 +209,8 @@ Indicators: ${result.reasons.join(", ")}
               maxWidth: "700px",
               lineHeight: 1.8,
               margin: "0 auto",
+              fontSize: isMobile ? "0.9rem" : "1rem",
+              padding: isMobile ? "0 1rem" : "0",
             }}
           >
             Upload files to detect malware indicators, suspicious extensions,
@@ -206,20 +221,22 @@ Indicators: ${result.reasons.join(", ")}
         {/* Main Layout */}
         <div
           style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 450px",
-            gap: "2rem",
+            display: "flex",
+            flexDirection: isMobile ? "column" : "row",
+            gap: "1.5rem",
             alignItems: "start",
           }}
         >
           {/* Upload Panel */}
           <div
             style={{
+              flex: isMobile ? "1" : isTablet ? "1.2" : "1",
               border: "1px solid #222",
               borderRadius: "24px",
-              padding: "2rem",
+              padding: isMobile ? "1.5rem" : "2rem",
               background: "#0b0b0b",
               transition: "transform 0.2s, box-shadow 0.2s",
+              width: "100%",
             }}
           >
             <div
@@ -228,9 +245,11 @@ Indicators: ${result.reasons.join(", ")}
                 justifyContent: "space-between",
                 alignItems: "center",
                 marginBottom: "1.5rem",
+                flexWrap: "wrap",
+                gap: "0.5rem",
               }}
             >
-              <h2 style={{ fontSize: "1.5rem" }}>📤 Upload File</h2>
+              <h2 style={{ fontSize: isMobile ? "1.3rem" : "1.5rem" }}>📤 Upload File</h2>
               {file && (
                 <button
                   onClick={handleClear}
@@ -258,7 +277,7 @@ Indicators: ${result.reasons.join(", ")}
               style={{
                 border: dragActive ? "2px solid #00ff66" : "2px dashed #333",
                 borderRadius: "16px",
-                padding: "2rem",
+                padding: isMobile ? "1rem" : "2rem",
                 textAlign: "center",
                 marginBottom: "1.5rem",
                 transition: "all 0.3s",
@@ -270,7 +289,7 @@ Indicators: ${result.reasons.join(", ")}
                   <span style={{ fontSize: "3rem", display: "block", marginBottom: "0.5rem" }}>
                     📄
                   </span>
-                  <p style={{ color: "#00ff66", fontWeight: "bold", marginBottom: "0.5rem" }}>
+                  <p style={{ color: "#00ff66", fontWeight: "bold", marginBottom: "0.5rem", wordBreak: "break-all" }}>
                     {file.name}
                   </p>
                   <p style={{ color: "#9ca3af", fontSize: "0.875rem" }}>
@@ -300,7 +319,7 @@ Indicators: ${result.reasons.join(", ")}
                   <span style={{ fontSize: "4rem", display: "block", marginBottom: "1rem" }}>
                     📁
                   </span>
-                  <p style={{ color: "#9ca3af", marginBottom: "0.5rem" }}>
+                  <p style={{ color: "#9ca3af", marginBottom: "0.5rem", fontSize: isMobile ? "0.9rem" : "1rem" }}>
                     Drag & Drop File Here
                   </p>
                   <p style={{ color: "#6b7280", fontSize: "0.875rem", marginBottom: "1rem" }}>
@@ -313,6 +332,8 @@ Indicators: ${result.reasons.join(", ")}
                     style={{
                       color: "white",
                       cursor: "pointer",
+                      fontSize: isMobile ? "0.8rem" : "1rem",
+                      width: isMobile ? "100%" : "auto",
                     }}
                     accept=".pdf,.docx,.doc,.exe,.zip,.rar,.js,.py,.bat,.dll,.txt,.jpg,.png,.xlsx,.pptx"
                   />
@@ -325,7 +346,7 @@ Indicators: ${result.reasons.join(", ")}
               disabled={loading || !file}
               style={{
                 width: "100%",
-                padding: "14px 24px",
+                padding: isMobile ? "12px 20px" : "14px 24px",
                 border: "none",
                 borderRadius: "12px",
                 background: loading || !file ? "#333" : "#00ff66",
@@ -337,6 +358,7 @@ Indicators: ${result.reasons.join(", ")}
                 alignItems: "center",
                 justifyContent: "center",
                 gap: "8px",
+                fontSize: isMobile ? "0.9rem" : "1rem",
               }}
             >
               {loading ? (
@@ -384,16 +406,12 @@ Indicators: ${result.reasons.join(", ")}
           {/* Result Panel */}
           <div
             style={{
-              border: result
-                ? result.is_malicious
-                  ? "1px solid rgba(255,0,0,0.3)"
-                  : "1px solid rgba(0,255,102,0.3)"
-                : "1px solid #222",
-              borderRadius: "24px",
-              padding: "2rem",
-              background: "#0b0b0b",
-              position: "relative",
-              transition: "all 0.3s",
+              flex: isMobile ? "1" : isTablet ? "0.9" : "0.55",
+              minWidth: isMobile ? "100%" : isTablet ? "320px" : "340px",
+              maxWidth: isMobile ? "100%" : isTablet ? "400px" : "380px",
+              // OR simple approach - fixed width for desktop
+              width: isMobile ? "100%" : isTablet ? "auto" : "380px",
+              // ... rest of styles
             }}
           >
             <div
@@ -402,9 +420,11 @@ Indicators: ${result.reasons.join(", ")}
                 justifyContent: "space-between",
                 alignItems: "center",
                 marginBottom: "1.5rem",
+                flexWrap: "wrap",
+                gap: "0.5rem",
               }}
             >
-              <h2 style={{ fontSize: "1.5rem" }}>📊 Scan Result</h2>
+              <h2 style={{ fontSize: isMobile ? "1.3rem" : "1.5rem" }}>📊 Scan Result</h2>
               {result && (
                 <button
                   onClick={handleCopyResult}
@@ -428,20 +448,22 @@ Indicators: ${result.reasons.join(", ")}
               <div
                 style={{
                   textAlign: "center",
-                  padding: "3rem 1rem",
+                  padding: isMobile ? "2rem 1rem" : "3rem 1rem",
                   color: "#9ca3af",
                 }}
               >
                 <span style={{ fontSize: "4rem", display: "block", marginBottom: "1rem" }}>
                   🛡️
                 </span>
-                <p>Upload a file and click "Scan File" to see results</p>
+                <p style={{ fontSize: isMobile ? "0.9rem" : "1rem" }}>
+                  Upload a file and click "Scan File" to see results
+                </p>
               </div>
             ) : loading ? (
               <div
                 style={{
                   textAlign: "center",
-                  padding: "3rem 1rem",
+                  padding: isMobile ? "2rem 1rem" : "3rem 1rem",
                 }}
               >
                 <span
@@ -468,7 +490,7 @@ Indicators: ${result.reasons.join(", ")}
                   <div
                     style={{
                       marginBottom: "1.5rem",
-                      padding: "1.5rem",
+                      padding: isMobile ? "1rem" : "1.5rem",
                       background: `linear-gradient(135deg, ${getRiskColor(result.risk_level)}10, transparent)`,
                       borderRadius: "16px",
                       border: `1px solid ${getRiskColor(result.risk_level)}30`,
@@ -480,7 +502,7 @@ Indicators: ${result.reasons.join(", ")}
                     <h3
                       style={{
                         color: getRiskColor(result.risk_level),
-                        fontSize: "2rem",
+                        fontSize: isMobile ? "1.5rem" : "2rem",
                         fontWeight: "bold",
                       }}
                     >
@@ -495,9 +517,12 @@ Indicators: ${result.reasons.join(", ")}
                         display: "flex",
                         justifyContent: "space-between",
                         marginBottom: "0.5rem",
+                        flexWrap: "wrap",
                       }}
                     >
-                      <p style={{ color: "#9ca3af" }}>Confidence Score</p>
+                      <p style={{ color: "#9ca3af", fontSize: isMobile ? "0.85rem" : "1rem" }}>
+                        Confidence Score
+                      </p>
                       <p style={{ color: getConfidenceColor(result.confidence), fontWeight: "bold" }}>
                         {result.confidence}%
                       </p>
@@ -523,14 +548,16 @@ Indicators: ${result.reasons.join(", ")}
 
                   {/* File Information */}
                   <div style={{ marginBottom: "1.5rem" }}>
-                    <p style={{ color: "#9ca3af", marginBottom: "0.5rem" }}>File Name</p>
+                    <p style={{ color: "#9ca3af", marginBottom: "0.5rem", fontSize: isMobile ? "0.85rem" : "1rem" }}>
+                      File Name
+                    </p>
                     <div
                       style={{
                         background: "#050505",
                         padding: "0.75rem",
                         borderRadius: "8px",
                         fontFamily: "monospace",
-                        fontSize: "0.875rem",
+                        fontSize: isMobile ? "0.75rem" : "0.875rem",
                         wordBreak: "break-all",
                       }}
                     >
@@ -540,7 +567,9 @@ Indicators: ${result.reasons.join(", ")}
 
                   {/* Classification Badge */}
                   <div style={{ marginBottom: "1.5rem" }}>
-                    <p style={{ color: "#9ca3af", marginBottom: "0.5rem" }}>Classification</p>
+                    <p style={{ color: "#9ca3af", marginBottom: "0.5rem", fontSize: isMobile ? "0.85rem" : "1rem" }}>
+                      Classification
+                    </p>
                     <span
                       style={{
                         display: "inline-block",
@@ -566,6 +595,7 @@ Indicators: ${result.reasons.join(", ")}
                         display: "flex",
                         alignItems: "center",
                         gap: "8px",
+                        fontSize: isMobile ? "0.85rem" : "1rem",
                       }}
                     >
                       <span>🚨</span> Indicators & Reasons
@@ -573,7 +603,7 @@ Indicators: ${result.reasons.join(", ")}
 
                     <div
                       style={{
-                        maxHeight: "200px",
+                        maxHeight: isMobile ? "150px" : "200px",
                         overflowY: "auto",
                         paddingRight: "8px",
                       }}
@@ -584,7 +614,7 @@ Indicators: ${result.reasons.join(", ")}
                             display: "flex",
                             flexDirection: "column",
                             gap: "0.75rem",
-                            paddingLeft: "1.5rem",
+                            paddingLeft: isMobile ? "1rem" : "1.5rem",
                           }}
                         >
                           {result.reasons.map((reason: string, index: number) => (
@@ -592,7 +622,7 @@ Indicators: ${result.reasons.join(", ")}
                               key={index}
                               style={{
                                 color: "#d1d5db",
-                                fontSize: "0.875rem",
+                                fontSize: isMobile ? "0.8rem" : "0.875rem",
                                 lineHeight: 1.5,
                               }}
                             >
@@ -635,16 +665,20 @@ Indicators: ${result.reasons.join(", ")}
             marginTop: "3rem",
             border: "1px solid #222",
             borderRadius: "20px",
-            padding: "2rem",
+            padding: isMobile ? "1rem" : "2rem",
             background: "#0b0b0b",
           }}
         >
-          <h2 style={{ marginBottom: "1rem" }}>📋 Supported File Types</h2>
+          <h2 style={{ marginBottom: "1rem", fontSize: isMobile ? "1.2rem" : "1.5rem" }}>
+            📋 Supported File Types
+          </h2>
           <div
             style={{
               display: "flex",
               flexWrap: "wrap",
               gap: "0.75rem",
+              maxHeight: isMobile ? "200px" : "auto",
+              overflowY: isMobile ? "auto" : "visible",
             }}
           >
             {[
@@ -657,12 +691,12 @@ Indicators: ${result.reasons.join(", ")}
               <span
                 key={type}
                 style={{
-                  padding: "6px 14px",
+                  padding: isMobile ? "4px 10px" : "6px 14px",
                   borderRadius: "20px",
                   background: "rgba(0,255,102,0.1)",
                   border: "1px solid rgba(0,255,102,0.2)",
                   color: "#00ff66",
-                  fontSize: "0.875rem",
+                  fontSize: isMobile ? "0.75rem" : "0.875rem",
                   fontFamily: "monospace",
                 }}
               >
