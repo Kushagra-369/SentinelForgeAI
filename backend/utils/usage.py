@@ -26,6 +26,8 @@ def check_usage(user_id, scan_type, plan):
         "date": today
     })
 
+    print("USAGE RECORD:", usage)
+
     if not usage:
         return True
 
@@ -35,6 +37,8 @@ def check_usage(user_id, scan_type, plan):
         f"{scan_type}_count",
         0
     )
+    print("CURRENT:", current)
+    print("LIMIT:", limit)
 
     return current < limit
 
