@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
 import "./Navbar.css";
 import axios from "axios";
@@ -13,6 +13,7 @@ const Navbar = () => {
   const [showGoogleLogin, setShowGoogleLogin] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleScroll = (): void => {
@@ -37,31 +38,26 @@ const Navbar = () => {
   useEffect(() => {
     // Check for existing user session
     const savedUser = localStorage.getItem("user");
-    const token = localStorage.getItem("auth_token");
-    
-    if (savedUser && token) {
-      setUser(JSON.parse(savedUser));
-      
-      // Verify token with backend
-      verifyToken(token);
+    if (savedUser) {
+      try {
+        const parsedUser = JSON.parse(savedUser);
+        setUser(parsedUser);
+      } catch (error) {
+        console.error("Error parsing user:", error);
+      }
     }
   }, []);
 
-  const verifyToken = async (token: string) => {
-    try {
-      const response = await axios.post(
-        "https://sentinelforgeai.onrender.com/auth/verify",
-        { token }
-      );
-      if (!response.data.valid) {
-        // Token invalid, logout
-        handleLogout();
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowMenu(false);
       }
-    } catch (error) {
-      console.error("Token verification failed:", error);
-      handleLogout();
-    }
-  };
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const toggleMenu = (): void => {
     setIsMenuOpen((prev) => !prev);
@@ -84,7 +80,7 @@ const Navbar = () => {
     setIsLoading(true);
     try {
       console.log("Google credential received:", credentialResponse);
-      
+
       const res = await axios.post(
         "https://sentinelforgeai.onrender.com/auth/google",
         {
@@ -94,10 +90,21 @@ const Navbar = () => {
 
       console.log("Server response:", res.data);
 
+      // Handle different response structures
+      let userData = null;
       if (res.data && res.data.user) {
-        setUser(res.data.user);
-        localStorage.setItem("user", JSON.stringify(res.data.user));
-        localStorage.setItem("auth_token", res.data.token || credentialResponse.credential);
+        userData = res.data.user;
+      } else if (res.data && res.data.success && res.data.data) {
+        userData = res.data.data;
+      } else if (res.data && res.data.email) {
+        userData = res.data;
+      } else {
+        userData = res.data;
+      }
+
+      if (userData) {
+        setUser(userData);
+        localStorage.setItem("user", JSON.stringify(userData));
         setShowGoogleLogin(false);
       } else {
         console.error("Invalid response structure:", res.data);
@@ -106,7 +113,6 @@ const Navbar = () => {
     } catch (error: any) {
       console.log("FULL ERROR:", error);
       console.log("RESPONSE:", error?.response?.data);
-      console.log("ERROR MESSAGE:", error?.message);
       
       let errorMessage = "Failed to sign in with Google. Please try again.";
       if (error?.response?.data?.message) {
@@ -130,7 +136,6 @@ const Navbar = () => {
   const handleLogout = () => {
     googleLogout();
     localStorage.removeItem("user");
-    localStorage.removeItem("auth_token");
     setUser(null);
     setShowMenu(false);
     setShowGoogleLogin(false);
@@ -231,44 +236,37 @@ const Navbar = () => {
                 )}
               </div>
             ) : (
-              <div className="navbar__profile">
+              <div className="navbar__profile" ref={dropdownRef}>
+                {/* Only Profile Photo - No Name */}
                 <img
-                  src={user.picture || user.avatar || "https://via.placeholder.com/40"}
+                  src={user.picture || user.avatar || "https://ui-avatars.com/api/?background=00ff66&color=000&font-size=0.5&name=" + (user.name || "U")}
                   alt={user.name || "Profile"}
                   className="navbar__avatar"
                   onClick={() => setShowMenu(!showMenu)}
                   referrerPolicy="no-referrer"
                 />
-                <div className="navbar__profile-info">
-                  <span className="navbar__profile-name">{user.name?.split(" ")[0] || "User"}</span>
-                </div>
 
+                {/* Dropdown Box on Click */}
                 {showMenu && (
                   <div className="navbar__dropdown">
                     <div className="navbar__dropdown-user">
-                      <img 
-                        src={user.picture || user.avatar} 
-                        alt={user.name} 
+                      <img
+                        src={user.picture || user.avatar || "https://ui-avatars.com/api/?background=00ff66&color=000&name=" + (user.name || "User")}
+                        alt={user.name}
                         className="navbar__dropdown-avatar"
+                        referrerPolicy="no-referrer"
                       />
                       <div>
-                        <div className="navbar__dropdown-name">{user.name}</div>
-                        <div className="navbar__dropdown-email">{user.email}</div>
+                        <div className="navbar__dropdown-name">{user.name || "User"}</div>
+                        <div className="navbar__dropdown-email">{user.email || ""}</div>
                       </div>
                     </div>
                     <div className="navbar__dropdown-divider"></div>
-                    <Link to="/dashboard" onClick={() => setShowMenu(false)}>
-                      📊 Dashboard
+                    <Link to="/buy-plan" onClick={() => setShowMenu(false)}>
+                      <span>💎</span> Buy Plan
                     </Link>
-                    <Link to="/pricing" onClick={() => setShowMenu(false)}>
-                      💎 Buy Plan
-                    </Link>
-                    <Link to="/settings" onClick={() => setShowMenu(false)}>
-                      ⚙️ Settings
-                    </Link>
-                    <div className="navbar__dropdown-divider"></div>
                     <button onClick={handleLogout}>
-                      🚪 Logout
+                      <span>🚪</span> Logout
                     </button>
                   </div>
                 )}
@@ -307,9 +305,9 @@ const Navbar = () => {
                 )}
               </Link>
             ))}
-            
+
             <div className="navbar__mobile-divider"></div>
-            
+
             {/* Mobile Social Links */}
             <div className="navbar__mobile-social">
               <a
@@ -331,11 +329,11 @@ const Navbar = () => {
                 <span>LinkedIn</span>
               </a>
             </div>
-            
+
             {/* Mobile Auth Section */}
             <div className="navbar__mobile-auth">
               {!user ? (
-                <button 
+                <button
                   className="navbar__mobile-signin-btn"
                   onClick={() => {
                     setShowGoogleLogin(true);
@@ -347,20 +345,27 @@ const Navbar = () => {
               ) : (
                 <>
                   <div className="navbar__mobile-user">
-                    <img src={user.picture} alt={user.name} />
+                    <img 
+                      src={user.picture || user.avatar || "https://ui-avatars.com/api/?background=00ff66&color=000&name=" + (user.name || "User")} 
+                      alt={user.name} 
+                      referrerPolicy="no-referrer"
+                    />
                     <div>
-                      <div>{user.name}</div>
-                      <div className="navbar__mobile-user-email">{user.email}</div>
+                      <div>{user.name || "User"}</div>
+                      <div className="navbar__mobile-user-email">{user.email || ""}</div>
                     </div>
                   </div>
-                  <button 
+                  <Link to="/buy-plan" className="navbar__mobile-buyplan-btn" onClick={closeMenu}>
+                    💎 Buy Plan
+                  </Link>
+                  <button
                     className="navbar__mobile-logout-btn"
                     onClick={() => {
                       handleLogout();
                       closeMenu();
                     }}
                   >
-                    Logout
+                    🚪 Logout
                   </button>
                 </>
               )}

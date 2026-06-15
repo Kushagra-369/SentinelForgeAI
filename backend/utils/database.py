@@ -11,4 +11,4 @@ db = client.get_default_database()
 scans_collection = db["scans"]
 users_collection = db["users"]
 
-print("MongoDB Connected")
+print("MongoDB Connected") 
