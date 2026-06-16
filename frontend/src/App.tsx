@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-
+import My_Dashboard from "./components/Dashboard/My_Dashboard";
 import Navbar from "./components/Navbar/Navbar";
 import Footer from "./components/Footer/Footer";
 import BuyPlan from "./components/Plan/But_Plan";
@@ -40,6 +40,8 @@ function App() {
           element={<About />}
         />
         <Route path="/buy-plan" element={<BuyPlan />} />
+        <Route path="/my-dashboard" element={<My_Dashboard />} />
+
       </Routes>
 
       <Footer />

@@ -158,3 +158,56 @@ def get_stats(days: Optional[int] = Query(7, ge=1, le=30, description="Number of
         "type_distribution": type_distribution,  # FIX: Now includes files
         "avg_confidence_by_risk": avg_confidence_by_risk
     }
+
+
+@router.get("/user-history/{user_id}")
+def get_user_history(user_id: str):
+
+    scans = list(
+        scans_collection.find(
+            {
+                "user_id": user_id
+            },
+            {
+                "_id": 0
+            }
+        )
+        .sort("created_at", -1)
+    )
+
+    email_scans = len([
+        s for s in scans
+        if s.get("type") == "email"
+    ])
+
+    url_scans = len([
+        s for s in scans
+        if s.get("type") == "url"
+    ])
+
+    file_scans = len([
+        s for s in scans
+        if s.get("type") == "file"
+    ])
+
+    threats = len([
+        s for s in scans
+        if s.get("risk_level")
+        in ["HIGH", "CRITICAL"]
+    ])
+
+    for scan in scans:
+        if scan.get("created_at"):
+            scan["created_at"] = (
+                scan["created_at"]
+                .isoformat()
+            )
+
+    return {
+        "success": True,
+        "email_scans": email_scans,
+        "url_scans": url_scans,
+        "file_scans": file_scans,
+        "threats_detected": threats,
+        "history": scans
+    }
