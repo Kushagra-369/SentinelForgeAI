@@ -43,6 +43,7 @@ export default function FileScanner() {
     }
 
     const maxSize = 50 * 1024 * 1024;
+
     if (file.size > maxSize) {
       alert("File size exceeds 50MB limit. Please select a smaller file.");
       return;
@@ -50,10 +51,26 @@ export default function FileScanner() {
 
     try {
       setLoading(true);
+
+      const user = JSON.parse(
+        localStorage.getItem("user") || "null"
+      );
+
       const formData = new FormData();
+
       formData.append("file", file);
 
-      const response = await axios.post<ScanResult>(
+      formData.append(
+        "user_id",
+        user?.google_id || "guest"
+      );
+
+      formData.append(
+        "plan",
+        user?.plan || "guest"
+      );
+
+      const response = await axios.post(
         `${API_URL}/file/scan`,
         formData,
         {
@@ -63,7 +80,13 @@ export default function FileScanner() {
         }
       );
 
+      if (response.data.success === false) {
+        alert(response.data.message);
+        return;
+      }
+
       setResult(response.data);
+
     } catch (error) {
       console.error("Scan error:", error);
       alert("Failed to scan file. Please try again.");
