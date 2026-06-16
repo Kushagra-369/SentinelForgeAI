@@ -32,18 +32,20 @@ export default function EmailScanner() {
   }, []);
 
   const handleScan = async () => {
+
     if (!email.trim()) {
+
       alert("Please paste an email to analyze");
+
       return;
     }
-
     try {
       setLoading(true);
+
       const user = JSON.parse(
         localStorage.getItem("user") || "null"
       );
-
-      const response = await axios.post<ScanResult>(
+      const response = await axios.post(
         `${API_URL}/email/scan`,
         {
           text: email,
@@ -51,13 +53,23 @@ export default function EmailScanner() {
           plan: user?.plan || "guest"
         }
       );
+      if (response.data.success === false) {
+        alert(response.data.message);
+        return;
+      }
       setResult(response.data);
     } catch (error) {
+
       console.error("Scan error:", error);
+
       alert("Failed to analyze email. Please try again.");
+
     } finally {
+
       setLoading(false);
+
     }
+
   };
 
   const handleClear = () => {

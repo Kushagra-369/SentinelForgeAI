@@ -45,10 +45,23 @@ export default function UrlScanner() {
 
     try {
       setLoading(true);
-      const response = await axios.post<ScanResult>(
-        `${API_URL}/url/scan`,
-        { url: url }
+      const user = JSON.parse(
+        localStorage.getItem("user") || "null"
       );
+
+      const response = await axios.post(
+        `${API_URL}/url/scan`,
+        {
+          url: url,
+          user_id: user?.google_id,
+          plan: user?.plan || "guest"
+        }
+      );
+      if (response.data.success === false) {
+        alert(response.data.message);
+        return;
+      }
+
       setResult(response.data);
     } catch (error) {
       console.error("Scan error:", error);
@@ -592,10 +605,10 @@ Indicators: ${result.reasons.join(", ")}
           style={{
             marginTop: "4rem",
             display: "grid",
-            gridTemplateColumns: isMobile 
-              ? "1fr" 
-              : isTablet 
-                ? "repeat(2, 1fr)" 
+            gridTemplateColumns: isMobile
+              ? "1fr"
+              : isTablet
+                ? "repeat(2, 1fr)"
                 : "repeat(auto-fit, minmax(250px, 1fr))",
             gap: "1.5rem",
           }}

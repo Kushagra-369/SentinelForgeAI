@@ -20,9 +20,16 @@ def scan(data: EmailRequest):
     print("PLAN:", plan)
     # Check usage limits
     if not check_usage(user_id, "email", plan):
+
+        if plan == "guest":
+            return {
+                "success": False,
+                "message": "Please sign in to continue scanning emails. Guest users are limited to 1 scan per day."
+            }
+
         return {
             "success": False,
-            "message": "Daily email scan limit reached"
+            "message": f"You have reached your daily email scan limit ({get_limit(plan)} scans/day)."
         }
 
     # Run AI scan

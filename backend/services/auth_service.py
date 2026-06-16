@@ -45,6 +45,7 @@ def google_login(token: str):
 
     return {
         "success": True,
+        "google_id": google_id,
         "name": user_info.get("name"),
         "email": user_info.get("email"),
         "picture": user_info.get("picture"),
