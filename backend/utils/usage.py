@@ -12,7 +12,7 @@ def get_limit(plan: str):
     if plan == "pro":
         return 20
 
-    if plan == "unlimited":
+    if plan in ["unlimited", "lifetime"]:
         return 999999
 
     return 1  # guest

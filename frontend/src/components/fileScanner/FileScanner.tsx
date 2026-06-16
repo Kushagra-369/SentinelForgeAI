@@ -62,7 +62,7 @@ export default function FileScanner() {
 
       formData.append(
         "user_id",
-        user?.google_id || "guest"
+        user?._id || "guest"
       );
 
       formData.append(

@@ -2,7 +2,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 import Navbar from "./components/Navbar/Navbar";
 import Footer from "./components/Footer/Footer";
-
+import BuyPlan from "./components/Plan/But_Plan";
 import Home from "./components/Home/Home";
 import About from "./components/About/About";
 import EmailScanner from "./components/EmailScanner/EmailScanner";
@@ -39,6 +39,7 @@ function App() {
           path="/about"
           element={<About />}
         />
+        <Route path="/buy-plan" element={<BuyPlan />} />
       </Routes>
 
       <Footer />
