@@ -53,7 +53,7 @@ export default function UrlScanner() {
         `${API_URL}/url/scan`,
         {
           url: url,
-          user_id: user?._id,
+          user_id: user?.email || "guest",
           plan: user?.plan || "guest"
         }
       );

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 import API_URL from "../GlobalAPIURL";
 import {
   LineChart,
@@ -76,7 +77,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [timeRange, setTimeRange] = useState<7 | 14 | 30>(7);
-
+  const navigate = useNavigate();
   useEffect(() => {
     const fetchStats = async () => {
       try {
@@ -212,6 +213,20 @@ export default function Dashboard() {
           gap: "1rem",
         }}
       >
+        <button
+          onClick={() => navigate("/my-dashboard")}
+          style={{
+            padding: "0.75rem 1.5rem",
+            background: "#00ff66",
+            color: "#000",
+            border: "none",
+            borderRadius: "10px",
+            cursor: "pointer",
+            fontWeight: "bold",
+          }}
+        >
+          👤 My Dashboard
+        </button>
         <div>
           <span
             style={{

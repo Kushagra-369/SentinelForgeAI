@@ -49,7 +49,7 @@ export default function EmailScanner() {
         `${API_URL}/email/scan`,
         {
           text: email,
-          user_id: user?._id,
+          user_id: user?.email || "guest",
           plan: user?.plan || "guest"
         }
       );
