@@ -17,13 +17,14 @@ client = razorpay.Client(
 )
 
 
+
 class CreateOrderRequest(BaseModel):
     plan: str
 
 
 @router.post("/create-order")
 def create_order(data: CreateOrderRequest):
-
+    print("CREATING ORDER")
     plans = {
         "pro_monthly": 99,
         "pro_yearly": 999,
